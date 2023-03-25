@@ -27,17 +27,28 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     @Override
     public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
         clients.inMemory()
+                // PASSWORD GRANT TYPE
                 .withClient("courses-web")
                 .secret(passwordEncoder.encode("web123"))
                 .authorizedGrantTypes("password", "refresh_token")
                 .scopes("write", "read")
                 .accessTokenValiditySeconds(6 * 60 * 60) // 6 HORAS
                 .refreshTokenValiditySeconds(60 * 24 * 60 * 60) // 60 DIAS
+                // CLIENT CREDENTIALS GRANT TYPE
                 .and()
                 .withClient("outra-api-backend")
                 .secret(passwordEncoder.encode("outra123"))
                 .authorizedGrantTypes("client_credentials")
                 .scopes("write", "read")
+                // AUTHORIZATION CODE GRANT TYPE
+                // http://localhost:8080/oauth/authorize?response_type=code&client_id=outra-api-backend2&state=stateTest&redirect_uri=http://aplicacao-cliente
+                .and()
+                .withClient("outra-api-backend2")
+                .secret(passwordEncoder.encode("outra2123"))
+                .authorizedGrantTypes("authorization_code")
+                .scopes("write", "read")
+                .redirectUris("http://aplicacao-cliente")
+                // CLIENT DO RESOURCE SERVER
                 .and()
                 .withClient("checkToken")
                 .secret("check123");
