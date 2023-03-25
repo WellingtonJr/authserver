@@ -34,6 +34,11 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
                 .accessTokenValiditySeconds(6 * 60 * 60) // 6 HORAS
                 .refreshTokenValiditySeconds(60 * 24 * 60 * 60) // 60 DIAS
                 .and()
+                .withClient("outra-api-backend")
+                .secret(passwordEncoder.encode("outra123"))
+                .authorizedGrantTypes("client_credentials")
+                .scopes("write", "read")
+                .and()
                 .withClient("checkToken")
                 .secret("check123");
     }
