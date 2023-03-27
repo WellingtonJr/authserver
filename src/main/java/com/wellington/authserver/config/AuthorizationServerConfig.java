@@ -47,11 +47,11 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
                 .secret(passwordEncoder.encode("outra2123"))
                 .authorizedGrantTypes("authorization_code")
                 .scopes("write", "read")
-                .redirectUris("http://aplicacao-cliente")
+                .redirectUris("http://127.0.0.1:5500")
                 // CLIENT DO RESOURCE SERVER
                 .and()
                 .withClient("checkToken")
-                .secret("check123");
+                .secret(passwordEncoder.encode("check123"));
     }
 
     @Override
