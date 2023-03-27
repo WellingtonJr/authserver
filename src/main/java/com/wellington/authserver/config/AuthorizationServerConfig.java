@@ -48,6 +48,13 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
                 .authorizedGrantTypes("authorization_code")
                 .scopes("write", "read")
                 .redirectUris("http://127.0.0.1:5500")
+                // IMPLICT GRANT TYPE
+                // http://localhost:8080/oauth/authorize?response_type=token&client_id=webadmin&state=stateTest&redirect_uri=http://aplicacao-cliente
+                .and()
+                .withClient("webadmin")
+                .authorizedGrantTypes("implicit")
+                .scopes("write", "read")
+                .redirectUris("http://aplicacao-cliente")
                 // CLIENT DO RESOURCE SERVER
                 .and()
                 .withClient("checkToken")
