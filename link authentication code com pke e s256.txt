@@ -1,0 +1,5 @@
+code verifier: NF7VMB768.UuUWhOd6_PVZc5rQwRPEO5Awe7oqvOK~GBmNunvrV~KUKdDmsLzH4CYLnM3VDO0blgr0-5Bnime8QS8B.s9Wzhp8aiRej~b7XE9CgGrCmSpk1BjJHpqHxh
+
+code challenge: FsYFd3k9zunse9wuchi7peD2HEk323EVrgonzPglfE4
+
+http://localhost:8080/oauth/authorize?response_type=code&client_id=outra-api-backend2&redirect_uri=http://aplicacao-cliente&code_challenge=FsYFd3k9zunse9wuchi7peD2HEk323EVrgonzPglfE4&code_challenge_method=s256
