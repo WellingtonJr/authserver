@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,6 +15,8 @@ import org.springframework.security.oauth2.config.annotation.web.configurers.Aut
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
 import org.springframework.security.oauth2.provider.CompositeTokenGranter;
 import org.springframework.security.oauth2.provider.TokenGranter;
+import org.springframework.security.oauth2.provider.token.TokenStore;
+import org.springframework.security.oauth2.provider.token.store.redis.RedisTokenStore;
 
 import com.wellington.authserver.security.PkceAuthorizationCodeTokenGranter;
 
@@ -29,6 +32,9 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 
     @Autowired
     UserDetailsService userDetailsService;
+
+    @Autowired
+    private RedisConnectionFactory redisConnectionFactory;
 
     @Override
     public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
@@ -50,18 +56,16 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
                 // http://localhost:8080/oauth/authorize?response_type=code&client_id=outra-api-backend2&state=stateTest&redirect_uri=http://aplicacao-cliente
                 /*
                  * COM PKCE
-                 * 
                  * http://localhost:8080/oauth/authorize?response_type=code&client_id=outra-api-
                  * backend2&redirect_uri=http://aplicacao-cliente&code_challenge=teste123&
                  * code_challenge_method=plain
-                 * 
                  */
                 .and()
                 .withClient("outra-api-backend2")
                 .secret(passwordEncoder.encode(""))
                 .authorizedGrantTypes("authorization_code")
                 .scopes("write", "read")
-                .redirectUris("http://aplicacao-cliente")
+                .redirectUris("http://aplicacao-cliente", "http://127.0.0.1:5500")
                 // IMPLICT GRANT TYPE
                 // http://localhost:8080/oauth/authorize?response_type=token&client_id=webadmin&state=stateTest&redirect_uri=http://aplicacao-cliente
                 .and()
@@ -89,7 +93,12 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
                 .authenticationManager(authenticationManager)
                 .userDetailsService(userDetailsService)
                 .reuseRefreshTokens(false)
+                .tokenStore(redisTokenStore())
                 .tokenGranter(tokenGranter(endpoints));
+    }
+
+    private TokenStore redisTokenStore() {
+        return new RedisTokenStore(redisConnectionFactory);
     }
 
     private TokenGranter tokenGranter(AuthorizationServerEndpointsConfigurer endpoints) {
