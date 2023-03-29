@@ -48,12 +48,20 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
                 .scopes("write", "read")
                 // AUTHORIZATION CODE GRANT TYPE
                 // http://localhost:8080/oauth/authorize?response_type=code&client_id=outra-api-backend2&state=stateTest&redirect_uri=http://aplicacao-cliente
+                /*
+                 * COM PKCE
+                 * 
+                 * http://localhost:8080/oauth/authorize?response_type=code&client_id=outra-api-
+                 * backend2&redirect_uri=http://aplicacao-cliente&code_challenge=teste123&
+                 * code_challenge_method=plain
+                 * 
+                 */
                 .and()
                 .withClient("outra-api-backend2")
-                .secret(passwordEncoder.encode("outra2123"))
+                .secret(passwordEncoder.encode(""))
                 .authorizedGrantTypes("authorization_code")
                 .scopes("write", "read")
-                .redirectUris("http://127.0.0.1:5500")
+                .redirectUris("http://aplicacao-cliente")
                 // IMPLICT GRANT TYPE
                 // http://localhost:8080/oauth/authorize?response_type=token&client_id=webadmin&state=stateTest&redirect_uri=http://aplicacao-cliente
                 .and()
@@ -69,8 +77,10 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 
     @Override
     public void configure(AuthorizationServerSecurityConfigurer security) throws Exception {
-        security.checkTokenAccess("isAuthenticated()");
-        // security.checkTokenAccess("permitAll()");
+        // security.checkTokenAccess("isAuthenticated()")
+        // .allowFormAuthenticationForClients();
+        security.checkTokenAccess("permitAll()")
+                .allowFormAuthenticationForClients();
     }
 
     @Override
