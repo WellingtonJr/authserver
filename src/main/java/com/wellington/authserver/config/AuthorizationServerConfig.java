@@ -22,6 +22,7 @@ import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenCo
 import org.springframework.security.oauth2.provider.token.store.KeyStoreKeyFactory;
 import org.springframework.security.oauth2.provider.token.store.redis.RedisTokenStore;
 
+import com.wellington.authserver.security.JwtKeyStoreProperties;
 import com.wellington.authserver.security.PkceAuthorizationCodeTokenGranter;
 
 @Configuration
@@ -38,6 +39,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     UserDetailsService userDetailsService;
 
     @Autowired
+    private JwtKeyStoreProperties jwtKeyStoreProperties;
 
     @Override
     public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
@@ -104,9 +106,9 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     public JwtAccessTokenConverter jwtAccessTokenConverter() {
         JwtAccessTokenConverter jwtAccessTokenConverter = new JwtAccessTokenConverter();
         // jwtAccessTokenConverter.setSigningKey("SAFDASDFASDASDGASDFASDFASDF2FSADFASDFVASVASDF2FASDFASF");
-        var jksResource = new ClassPathResource("/keystores/courseapi.jks");
-        var keyStorePass = "123456";
-        var keyPairAlias = "courseapi";
+        var jksResource = new ClassPathResource(jwtKeyStoreProperties.getPath());
+        var keyStorePass = jwtKeyStoreProperties.getPassword();
+        var keyPairAlias = jwtKeyStoreProperties.getKeypairAlias();
 
         var keyStoreKeyFactory = new KeyStoreKeyFactory(jksResource, keyStorePass.toCharArray());
         var keyPair = keyStoreKeyFactory.getKeyPair(keyPairAlias);
