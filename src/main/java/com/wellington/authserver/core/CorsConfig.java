@@ -1,4 +1,4 @@
-package com.wellington.authserver.config;
+package com.wellington.authserver.core;
 
 import java.util.Collections;
 

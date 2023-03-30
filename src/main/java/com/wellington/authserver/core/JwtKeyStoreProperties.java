@@ -1,4 +1,4 @@
-package com.wellington.authserver.security;
+package com.wellington.authserver.core;
 
 import javax.validation.constraints.NotBlank;
 

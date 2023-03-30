@@ -1,4 +1,4 @@
-package com.wellington.authserver.config;
+package com.wellington.authserver.core;
 
 import java.util.Arrays;
 
@@ -23,9 +23,6 @@ import org.springframework.security.oauth2.provider.token.TokenStore;
 import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.store.KeyStoreKeyFactory;
 import org.springframework.security.oauth2.provider.token.store.redis.RedisTokenStore;
-
-import com.wellington.authserver.security.JwtKeyStoreProperties;
-import com.wellington.authserver.security.PkceAuthorizationCodeTokenGranter;
 
 @Configuration
 @EnableAuthorizationServer
