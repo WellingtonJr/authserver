@@ -27,7 +27,11 @@ public class AuthorizationServerConfig {
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public SecurityFilterChain authFilterChain(HttpSecurity http) throws Exception {
+
+        http.authorizeRequests()
+                .antMatchers("/oauth2/**").permitAll();
         OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+
         return http.build();
     }
 
@@ -43,8 +47,8 @@ public class AuthorizationServerConfig {
     public RegisteredClientRepository registeredClientRepository(PasswordEncoder passwordEncoder) {
         RegisteredClient courseapibackend = RegisteredClient
                 .withId("1")
-                .clientId("outra-api-backend")
-                .clientSecret(passwordEncoder.encode("outra123"))
+                .clientId("course-api")
+                .clientSecret(passwordEncoder.encode("123"))
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                 .scope("READ")
