@@ -1,144 +1,65 @@
 package com.wellington.authserver.core;
 
+import java.time.Duration;
 import java.util.Arrays;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
-import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
-import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
-import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerEndpointsConfigurer;
-import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
-import org.springframework.security.oauth2.provider.CompositeTokenGranter;
-import org.springframework.security.oauth2.provider.TokenGranter;
-import org.springframework.security.oauth2.provider.approval.ApprovalStore;
-import org.springframework.security.oauth2.provider.approval.TokenApprovalStore;
-import org.springframework.security.oauth2.provider.token.TokenEnhancerChain;
-import org.springframework.security.oauth2.provider.token.TokenStore;
-import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
-import org.springframework.security.oauth2.provider.token.store.KeyStoreKeyFactory;
-import org.springframework.security.oauth2.provider.token.store.redis.RedisTokenStore;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.core.OAuth2TokenFormat;
+import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.config.ProviderSettings;
+import org.springframework.security.oauth2.server.authorization.config.TokenSettings;
+import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@EnableAuthorizationServer
-public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdapter {
+public class AuthorizationServerConfig {
 
-    @Autowired
-    PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    UserDetailsService userDetailsService;
-
-    @Autowired
-    private JwtKeyStoreProperties jwtKeyStoreProperties;
-
-    @Override
-    public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-        clients.inMemory()
-                // PASSWORD GRANT TYPE
-                .withClient("courses-web")
-                .secret(passwordEncoder.encode("web123"))
-                .authorizedGrantTypes("password", "refresh_token")
-                .scopes("write", "read")
-                .accessTokenValiditySeconds(6 * 60 * 60) // 6 HORAS
-                .refreshTokenValiditySeconds(60 * 24 * 60 * 60) // 60 DIAS
-                // CLIENT CREDENTIALS GRANT TYPE
-                .and()
-                .withClient("outra-api-backend")
-                .secret(passwordEncoder.encode("outra123"))
-                .authorizedGrantTypes("client_credentials")
-                .scopes("write", "read")
-                // AUTHORIZATION CODE GRANT TYPE
-                // http://localhost:8080/oauth/authorize?response_type=code&client_id=outra-api-backend2&state=stateTest&redirect_uri=http://aplicacao-cliente
-                /*
-                 * COM PKCE
-                 * http://localhost:8080/oauth/authorize?response_type=code&client_id=outra-api-
-                 * backend2&redirect_uri=http://aplicacao-cliente&code_challenge=teste123&
-                 * code_challenge_method=plain
-                 */
-                .and()
-                .withClient("outra-api-backend2")
-                .secret(passwordEncoder.encode(""))
-                .authorizedGrantTypes("authorization_code")
-                .scopes("write", "read")
-                .redirectUris("http://aplicacao-cliente", "http://127.0.0.1:5500")
-                // IMPLICT GRANT TYPE
-                // http://localhost:8080/oauth/authorize?response_type=token&client_id=webadmin&state=stateTest&redirect_uri=http://aplicacao-cliente
-                .and()
-                .withClient("webadmin")
-                .authorizedGrantTypes("implicit")
-                .scopes("write", "read")
-                .redirectUris("http://aplicacao-cliente")
-                // CLIENT DO RESOURCE SERVER
-                .and()
-                .withClient("checkToken")
-                .secret(passwordEncoder.encode("check123"));
-    }
-
-    @Override
-    public void configure(AuthorizationServerSecurityConfigurer security) throws Exception {
-        security.checkTokenAccess("isAuthenticated()")
-                .tokenKeyAccess("permitAll()")
-                .allowFormAuthenticationForClients();
-        // security.checkTokenAccess("permitAll()")
-        // .allowFormAuthenticationForClients();
-    }
-
-    @Override
-    public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
-        var enhancerChain = new TokenEnhancerChain();
-        enhancerChain.setTokenEnhancers(Arrays.asList(new JwtCustomClaimTokenEnhancer(), jwtAccessTokenConverter()));
-
-        endpoints
-                .authenticationManager(authenticationManager)
-                .userDetailsService(userDetailsService)
-                .reuseRefreshTokens(false)
-                .accessTokenConverter(jwtAccessTokenConverter())
-                .tokenEnhancer(enhancerChain)
-                .approvalStore(approvalStore(endpoints.getTokenStore()))
-                .tokenGranter(tokenGranter(endpoints));
-    }
-
-    private ApprovalStore approvalStore(TokenStore tokenStore) {
-        var approvalStore = new TokenApprovalStore();
-        approvalStore.setTokenStore(tokenStore);
-        return approvalStore;
+    @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    public SecurityFilterChain authFilterChain(HttpSecurity http) throws Exception {
+        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+        return http.build();
     }
 
     @Bean
-    public JwtAccessTokenConverter jwtAccessTokenConverter() {
-        JwtAccessTokenConverter jwtAccessTokenConverter = new JwtAccessTokenConverter();
-        // jwtAccessTokenConverter.setSigningKey("SAFDASDFASDASDGASDFASDFASDF2FSADFASDFVASVASDF2FASDFASF");
-        var jksResource = new ClassPathResource(jwtKeyStoreProperties.getPath());
-        var keyStorePass = jwtKeyStoreProperties.getPassword();
-        var keyPairAlias = jwtKeyStoreProperties.getKeypairAlias();
+    public ProviderSettings providerSettings(CourseApiSecurityProperties properties) {
 
-        var keyStoreKeyFactory = new KeyStoreKeyFactory(jksResource, keyStorePass.toCharArray());
-        var keyPair = keyStoreKeyFactory.getKeyPair(keyPairAlias);
-
-        jwtAccessTokenConverter.setKeyPair(keyPair);
-
-        return jwtAccessTokenConverter;
+        return ProviderSettings.builder()
+                .issuer(properties.getProviderUrl())
+                .build();
     }
 
-    private TokenGranter tokenGranter(AuthorizationServerEndpointsConfigurer endpoints) {
-        var pkceAuthorizationCodeTokenGranter = new PkceAuthorizationCodeTokenGranter(endpoints.getTokenServices(),
-                endpoints.getAuthorizationCodeServices(), endpoints.getClientDetailsService(),
-                endpoints.getOAuth2RequestFactory());
+    @Bean
+    public RegisteredClientRepository registeredClientRepository(PasswordEncoder passwordEncoder) {
+        RegisteredClient courseapibackend = RegisteredClient
+                .withId("1")
+                .clientId("outra-api-backend")
+                .clientSecret(passwordEncoder.encode("outra123"))
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .scope("READ")
+                .tokenSettings(TokenSettings.builder()
+                        .accessTokenFormat(OAuth2TokenFormat.REFERENCE)
+                        .accessTokenTimeToLive(Duration.ofMinutes(30))
+                        .build())
+                .build();
 
-        var granters = Arrays.asList(
-                pkceAuthorizationCodeTokenGranter, endpoints.getTokenGranter());
+        return new InMemoryRegisteredClientRepository(Arrays.asList(courseapibackend));
+    }
 
-        return new CompositeTokenGranter(granters);
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
 }
