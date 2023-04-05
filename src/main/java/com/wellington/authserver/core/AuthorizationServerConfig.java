@@ -38,102 +38,105 @@ import com.nimbusds.jose.proc.SecurityContext;
 @Configuration
 public class AuthorizationServerConfig {
 
-    @Bean
-    @Order(Ordered.HIGHEST_PRECEDENCE)
-    public SecurityFilterChain authFilterChain(HttpSecurity http) throws Exception {
+        @Bean
+        @Order(Ordered.HIGHEST_PRECEDENCE)
+        public SecurityFilterChain defaultFilterChain(HttpSecurity http) throws Exception {
+                OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+                return http.formLogin(Customizer.withDefaults()).build();
+        }
 
-        http.authorizeRequests()
-                .antMatchers("/oauth2/**").permitAll();
-        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+        @Bean
+        public SecurityFilterChain authFilterChain(HttpSecurity http) throws Exception {
+                http.authorizeRequests().anyRequest().authenticated();
+                return http.formLogin(Customizer.withDefaults()).build();
+        }
 
-        return http.formLogin(Customizer.withDefaults()).build();
-    }
+        @Bean
+        public ProviderSettings providerSettings(CourseApiSecurityProperties properties) {
 
-    @Bean
-    public ProviderSettings providerSettings(CourseApiSecurityProperties properties) {
+                return ProviderSettings.builder()
+                                .issuer(properties.getProviderUrl())
+                                .build();
+        }
 
-        return ProviderSettings.builder()
-                .issuer(properties.getProviderUrl())
-                .build();
-    }
+        @Bean
+        public RegisteredClientRepository registeredClientRepository(PasswordEncoder passwordEncoder) {
+                RegisteredClient courseapibackend = RegisteredClient
+                                .withId("1")
+                                .clientId("course-api")
+                                .clientSecret(passwordEncoder.encode("123"))
+                                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                                .scope("READ")
+                                .tokenSettings(TokenSettings.builder()
+                                                .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
+                                                .accessTokenTimeToLive(Duration.ofMinutes(30))
+                                                .build())
+                                .build();
 
-    @Bean
-    public RegisteredClientRepository registeredClientRepository(PasswordEncoder passwordEncoder) {
-        RegisteredClient courseapibackend = RegisteredClient
-                .withId("1")
-                .clientId("course-api")
-                .clientSecret(passwordEncoder.encode("123"))
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                .scope("READ")
-                .tokenSettings(TokenSettings.builder()
-                        .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
-                        .accessTokenTimeToLive(Duration.ofMinutes(30))
-                        .build())
-                .build();
+                RegisteredClient algafoodWeb = RegisteredClient
+                                .withId("2")
+                                .clientId("algafood-web")
+                                .clientSecret(passwordEncoder.encode("web123"))
+                                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                                .scope("READ")
+                                .scope("WRITE")
+                                .tokenSettings(TokenSettings.builder()
+                                                .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
+                                                .accessTokenTimeToLive(Duration.ofMinutes(15))
+                                                .build())
+                                .redirectUri("http://127.0.0.1:8080/authorized")
+                                .clientSettings(ClientSettings.builder()
+                                                .requireAuthorizationConsent(true)
+                                                .build())
+                                .build();
 
-        RegisteredClient algafoodWeb = RegisteredClient
-                .withId("2")
-                .clientId("algafood-web")
-                .clientSecret(passwordEncoder.encode("web123"))
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .scope("READ")
-                .scope("WRITE")
-                .tokenSettings(TokenSettings.builder()
-                        .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
-                        .accessTokenTimeToLive(Duration.ofMinutes(15))
-                        .build())
-                .redirectUri("http://localhost:8080/authorized")
-                .clientSettings(ClientSettings.builder()
-                        .requireAuthorizationConsent(true)
-                        .build())
-                .build();
+                RegisteredClient foodanalytics = RegisteredClient
+                                .withId("3")
+                                .clientId("foodanalytics")
+                                .clientSecret(passwordEncoder.encode("web123"))
+                                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                                .scope("READ")
+                                .scope("WRITE")
+                                .tokenSettings(TokenSettings.builder()
+                                                .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
+                                                .accessTokenTimeToLive(Duration.ofMinutes(30))
+                                                .build())
+                                .redirectUri("http://localhost:8082/")
+                                .clientSettings(ClientSettings.builder()
+                                                .requireAuthorizationConsent(false)
+                                                .build())
+                                .build();
 
-        RegisteredClient foodanalytics = RegisteredClient
-                .withId("3")
-                .clientId("foodanalytics")
-                .clientSecret(passwordEncoder.encode("web123"))
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .scope("READ")
-                .scope("WRITE")
-                .tokenSettings(TokenSettings.builder()
-                        .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
-                        .accessTokenTimeToLive(Duration.ofMinutes(30))
-                        .build())
-                .redirectUri("http://localhost:8082/")
-                .clientSettings(ClientSettings.builder()
-                        .requireAuthorizationConsent(false)
-                        .build())
-                .build();
+                return new InMemoryRegisteredClientRepository(
+                                Arrays.asList(courseapibackend, algafoodWeb, foodanalytics));
+        }
 
-        return new InMemoryRegisteredClientRepository(Arrays.asList(courseapibackend, algafoodWeb, foodanalytics));
-    }
+        @Bean
+        public OAuth2AuthorizationService oAuth2AuthorizationService(JdbcOperations jdbcOperations,
+                        RegisteredClientRepository registeredClientRepository) {
 
-    @Bean
-    public OAuth2AuthorizationService oAuth2AuthorizationService(JdbcOperations jdbcOperations,
-            RegisteredClientRepository registeredClientRepository) {
+                return new JdbcOAuth2AuthorizationService(jdbcOperations, registeredClientRepository);
+        }
 
-        return new JdbcOAuth2AuthorizationService(jdbcOperations, registeredClientRepository);
-    }
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        @Bean
+        public JWKSource<SecurityContext> jwkSource(JwtKeyStoreProperties properties) throws Exception {
+                char[] keyStorePass = properties.getPassword().toCharArray();
+                String keypairAlias = properties.getKeypairAlias();
+                Resource jksLocation = properties.getJksLocation();
+                InputStream inputStream = jksLocation.getInputStream();
+                KeyStore keyStore = KeyStore.getInstance("JKS");
+                keyStore.load(inputStream, keyStorePass);
 
-    @Bean
-    public JWKSource<SecurityContext> jwkSource(JwtKeyStoreProperties properties) throws Exception {
-        char[] keyStorePass = properties.getPassword().toCharArray();
-        String keypairAlias = properties.getKeypairAlias();
-        Resource jksLocation = properties.getJksLocation();
-        InputStream inputStream = jksLocation.getInputStream();
-        KeyStore keyStore = KeyStore.getInstance("JKS");
-        keyStore.load(inputStream, keyStorePass);
-
-        RSAKey rsaKey = RSAKey.load(keyStore, keypairAlias, keyStorePass);
-        return new ImmutableJWKSet<>(new JWKSet(rsaKey));
-    }
+                RSAKey rsaKey = RSAKey.load(keyStore, keypairAlias, keyStorePass);
+                return new ImmutableJWKSet<>(new JWKSet(rsaKey));
+        }
 
 }
