@@ -47,8 +47,12 @@ public class AuthorizationServerConfig {
 
         @Bean
         public SecurityFilterChain authFilterChain(HttpSecurity http) throws Exception {
-                http.authorizeRequests().anyRequest().authenticated();
+
+                http.authorizeRequests()
+                                .antMatchers("/oauth2/**").permitAll()
+                                .anyRequest().authenticated();
                 return http.formLogin(Customizer.withDefaults()).build();
+                // return http.formLogin(customizer -> customizer.loginPage("/login")).build();
         }
 
         @Bean
@@ -80,11 +84,14 @@ public class AuthorizationServerConfig {
                                 .clientSecret(passwordEncoder.encode("web123"))
                                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                                 .scope("READ")
                                 .scope("WRITE")
                                 .tokenSettings(TokenSettings.builder()
                                                 .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
                                                 .accessTokenTimeToLive(Duration.ofMinutes(15))
+                                                .reuseRefreshTokens(false)
+                                                .refreshTokenTimeToLive(Duration.ofDays(1))
                                                 .build())
                                 .redirectUri("http://127.0.0.1:8080/authorized")
                                 .clientSettings(ClientSettings.builder()
